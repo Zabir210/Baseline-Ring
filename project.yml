@@ -1,0 +1,122 @@
+# Optional spec for the committed BaselineRing.xcodeproj.
+# Open the xcodeproj directly. Do not run `xcodegen generate` unless you mean
+# to replace that project: Xcode 26 embeds the Watch app in PlugIns, and a
+# stock XcodeGen may still emit the legacy Watch/ destination.
+name: BaselineRing
+options:
+  bundleIdPrefix: com.zabir.baselinering
+  deploymentTarget:
+    iOS: "17.0"
+    watchOS: "10.0"
+  createIntermediateGroups: true
+settings:
+  SWIFT_VERSION: "5.0"
+  MARKETING_VERSION: "0.1.0"
+  CURRENT_PROJECT_VERSION: "1"
+  SUPPORTS_MACCATALYST: NO
+packages:
+  BaselineCore:
+    path: BaselineCore
+targets:
+  BaselineRing:
+    type: application
+    platform: iOS
+    sources:
+      - path: BaselineRing
+        excludes:
+          - Info.plist
+          - BaselineRing.entitlements
+    dependencies:
+      - package: BaselineCore
+      - target: BaselineRingWatch
+        embed: true
+      - target: BaselineRingIntents
+        embed: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.zabir.baselinering
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: BaselineRing/Info.plist
+        CODE_SIGN_ENTITLEMENTS: BaselineRing/BaselineRing.entitlements
+        TARGETED_DEVICE_FAMILY: "1"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        SUPPORTS_MACCATALYST: NO
+    scheme:
+      testTargets:
+        - BaselineRingTests
+  BaselineRingWatch:
+    type: application
+    platform: watchOS
+    sources:
+      - path: BaselineRingWatch
+        excludes:
+          - Info.plist
+          - BaselineRingWatch.entitlements
+    dependencies:
+      - package: BaselineCore
+      - target: BaselineRingWidgets
+        embed: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.zabir.baselinering.watchkitapp
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: BaselineRingWatch/Info.plist
+        CODE_SIGN_ENTITLEMENTS: BaselineRingWatch/BaselineRingWatch.entitlements
+        SDKROOT: watchos
+        WATCHOS_DEPLOYMENT_TARGET: "10.0"
+        TARGETED_DEVICE_FAMILY: "4"
+        SKIP_INSTALL: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+  BaselineRingWidgets:
+    type: app-extension
+    platform: watchOS
+    sources:
+      - path: BaselineRingWidgets
+        excludes:
+          - Info.plist
+          - BaselineRingWidgets.entitlements
+    dependencies:
+      - package: BaselineCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.zabir.baselinering.watchkitapp.widgets
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: BaselineRingWidgets/Info.plist
+        CODE_SIGN_ENTITLEMENTS: BaselineRingWidgets/BaselineRingWidgets.entitlements
+        SDKROOT: watchos
+        WATCHOS_DEPLOYMENT_TARGET: "10.0"
+        TARGETED_DEVICE_FAMILY: "4"
+        SKIP_INSTALL: YES
+        APPLICATION_EXTENSION_API_ONLY: YES
+  BaselineRingIntents:
+    type: extensionkit-extension
+    platform: iOS
+    sources:
+      - path: BaselineRingIntents
+        excludes:
+          - Info.plist
+          - BaselineRingIntents.entitlements
+    dependencies:
+      - package: BaselineCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.zabir.baselinering.intents
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: BaselineRingIntents/Info.plist
+        CODE_SIGN_ENTITLEMENTS: BaselineRingIntents/BaselineRingIntents.entitlements
+        SKIP_INSTALL: YES
+        APPLICATION_EXTENSION_API_ONLY: YES
+  BaselineRingTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - BaselineCore/Tests/BaselineCoreTests
+    dependencies:
+      - package: BaselineCore
+      - target: BaselineRing
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.zabir.baselinering.tests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/BaselineRing.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/BaselineRing"
+        BUNDLE_LOADER: "$(TEST_HOST)"

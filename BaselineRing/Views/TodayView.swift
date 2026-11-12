@@ -15,6 +15,39 @@ struct TodayView: View {
                 if !model.snapshot.hasBeenWritten || needsConnect {
                     connectCard
                 }
+                if let pattern = model.snapshot.patternChange, pattern.isActive {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(pattern.headline)
+                            .font(.headline)
+                        Text(pattern.explanation)
+                            .font(.subheadline)
+                    }
+                    .padding()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.orange.opacity(0.15), in: RoundedRectangle(cornerRadius: 16))
+                }
+                NavigationLink {
+                    ReadinessDetailView()
+                } label: {
+                    ReadinessCard(readiness: model.snapshot.readiness)
+                }
+                .buttonStyle(.plain)
+                NavigationLink {
+                    SleepDetailView()
+                } label: {
+                    SleepScoreCard(sleep: model.snapshot.sleepScore)
+                }
+                .buttonStyle(.plain)
+                NavigationLink {
+                    JournalView()
+                } label: {
+                    Text("Journal and tag effects")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding()
+                        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 16))
+                }
+                .buttonStyle(.plain)
                 ForEach(model.snapshot.metrics) { metric in
                     NavigationLink {
                         MetricDetailView(metric: metric.metric)
@@ -85,7 +118,7 @@ struct TodayView: View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Connect Health")
                 .font(.headline)
-            Text("Baseline Ring reads HRV, resting heart rate, sleep, and steps on this iPhone to learn your own ranges. On-device only.")
+            Text("Baseline Ring reads HRV, resting heart rate, sleep, steps, and activity on this iPhone. Wrist temperature is included only when your watch records it. On-device only.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
             Button("Allow Health Access") {

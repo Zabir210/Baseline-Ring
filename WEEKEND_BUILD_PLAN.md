@@ -1,5 +1,7 @@
 # Baseline Ring — Weekend MVP Build Plan
 
+The `oura-parity` branch adds readiness, sleep score, activity load, a non-diagnostic multi-day pattern flag, and day tags on top of this plan. Those scores stay explainable z-scores. Do not replace `BaselineEngine`. Hardware limits and what is still unverified are in `OURA_PARITY.md` and the README hardware table. The schedule below is the original weekend sequence.
+
 **Owner:** Zabir Islam
 **Repo:** https://github.com/Zabir210/Baseline-Ring
 **Stack:** SwiftUI, HealthKit, SwiftData, WidgetKit, App Intents, Swift Charts, watchOS SwiftUI

@@ -1,16 +1,14 @@
 # Baseline Ring
 
-Privacy-first iPhone and Apple Watch app that learns **your** HealthKit baselines for HRV, resting heart rate, sleep, and steps, then flags when a day breaks that personal pattern. Detection is on-device rolling z-score (optional CUSUM is implemented and off). This is not a Whoop or Oura clone: there is no strain score, no recovery score, and no account.
+Privacy-first iPhone and Apple Watch app: Oura-style insights from the Apple Watch you already own. No ring and no subscription. Readiness, sleep, and activity load are weighted z-scores on top of the same on-device baseline engine. Every score lists which metrics moved it and by how many standard deviations. When there is not enough fresh data, the app says so instead of showing a number.
 
 Data stays on the devices. The SwiftData store is created with CloudKit disabled.
 
 ## Non-goals
 
-Do not add these in the weekend MVP:
-
-- Training load, strain, recovery scores, or any composite “readiness” index
 - Cloud sync, accounts, analytics SDKs, or server-side models
-- Menstrual cycle, SpO₂, respiratory rate, ECG, or workouts as first-class metrics
+- A medical or diagnostic claim. Copy stays “your pattern changed” / “personal pattern signal — not a diagnosis.”
+- Menstrual cycle, SpO₂, respiratory rate, or ECG as first-class metrics
 - Social, sharing, coaching chat, or LLM narratives
 - macOS menu bar, or a Shortcut signal pack
 - Marketing polish, onboarding animations, or a paywall
@@ -27,17 +25,35 @@ UI copy stays in pattern language. The standing footer is “Personal pattern si
 | Watch complication (WidgetKit) | `BaselineRingWidgets/` |
 | “Am I off baseline?” App Intent | `BaselineRingIntents/` |
 | Models, z-score engine, alert copy, snapshot | `BaselineCore/` (local Swift package, no UI) |
-| HealthKit read path (HRV, RHR, sleep hours, steps) | `BaselineRing/Health/HealthKitReader.swift` |
+| HealthKit read path (HRV, RHR, sleep, steps, active energy, workouts, wrist temperature when present) | `BaselineRing/Health/HealthKitReader.swift` |
+| Readiness, sleep score, activity load, pattern-change flag, tag effects | `BaselineCore/Sources/BaselineCore/Scores/` |
 | Engine tests | `BaselineCore/Tests/BaselineCoreTests/` |
+
+The feature map and the gaps are in `OURA_PARITY.md`.
 
 Still for the weekend, not this scaffold: `HKObserverQuery` background delivery, notification categories, and real-device dogfood. See the schedule in `WEEKEND_BUILD_PLAN.md`.
 
 ## Requirements
 
 - Mac with Xcode 16 or newer (the project uses synchronized folder groups)
-- iOS 17+ / watchOS 10+. The project targets those minimums
+- The app target is iOS 17 and watchOS 10. That is the lowest SwiftData allows, and watchOS 10 is the last system Apple Watch Series 4 can run. See the hardware table below.
 - A development team selected in Signing & Capabilities
 - A paid Apple Developer Program membership to run HealthKit on a physical iPhone. The simulator can run without the paid program once a personal team is selected, but Health samples in the simulator are usually empty — use **Settings → Load example pattern**
+
+## Hardware support
+
+The build cannot drop to iOS 16 or watchOS 8. SwiftData, the SwiftUI observation used by the screens, and the watch app’s widget embedding need iOS 17 and watchOS 10. Series 4’s newest system is watchOS 10, so that watch is in range. Features that depend on newer sensors are skipped when the data is absent. They are not filled in with a fake number.
+
+| Feature | Series 4 on watchOS 10 | Series 6–7 | Series 8, Ultra, and later | If the data is missing |
+|---|---|---|---|---|
+| HRV, resting HR, steps | Yes. HRV is often sparse, so confidence stays medium or the score is withheld until 10 fresh days. | Yes | Yes | “Not enough data” |
+| Sleep duration, in-bed, efficiency, bedtime consistency | Yes | Yes | Yes | Duration-only, or no sleep score under 10 nights |
+| Core / deep / REM | When Health has stage samples (recordings from watchOS 9+). The API is gated with `#available(iOS 16, *)`. | Yes | Yes | Fallback path. No stage points. |
+| Active energy | Yes | Yes | Yes | Load uses whatever of steps, energy, and zone minutes exists |
+| Workout heart-rate minutes | Estimated from workout average HR (full credit at ≥120 bpm, half at 100–119). Not a clinical zone model. | Yes | Yes | Zone term omitted |
+| Wrist temperature | No sensor | No sensor | `appleSleepingWristTemperature` when samples exist (`#available(iOS 16, *)`) | Pattern-change flag does not require it |
+| Readiness on the Watch complication | watchOS 10 WidgetKit. Shows the number, or “–” when confidence is low. | Yes | Yes | “–” |
+| iOS 16 phone / watchOS 8–9 | Not a supported build. A paired Series 4 on watchOS 10 needs an iPhone that can run iOS 17. | — | — | — |
 
 ## Clone and open on a Mac
 

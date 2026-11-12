@@ -196,8 +196,8 @@ public enum TagEffectCalculator {
                 .filter { $0.metric == metric }
                 .map { (day: calendar.startOfDay(for: $0.day), value: $0.value) }
                 .sorted { $0.day < $1.day }
-            let history = series.filter { $0.day < day }.map(\.value)
-            let observation = series.last { $0.day == day }?.value
+            let history = series.filter { $0.day < day }.map { $0.value }
+            let observation = series.last(where: { $0.day == day })?.value
             let evaluation = BaselineEngine.evaluate(
                 metric: metric,
                 baselineValues: history,

@@ -106,7 +106,7 @@ public enum PatternChangeDetector {
         let rhr = rollingZ(daily: daily, metric: .rhr, epsilon: MetricKind.rhr.epsilon, settings: settings)
         let tempValues = temperatures.map { (day: $0.day, value: $0.celsius) }
         let temp = rollingZ(values: tempValues, epsilon: temperatureEpsilon, settings: settings)
-        let allDays = Set(hrv.map(\.day) + rhr.map(\.day) + temp.map(\.day))
+        let allDays = Set(hrv.map { $0.day } + rhr.map { $0.day } + temp.map { $0.day })
         return allDays.sorted().map { day in
             PatternDay(
                 day: day,
@@ -140,14 +140,14 @@ public enum PatternChangeDetector {
         epsilon: Double,
         settings: BaselineParameters
     ) -> [(day: Date, z: Double?)] {
-        values.enumerated().map { index, point in
-            let history = values.prefix(index).suffix(settings.windowDays).map(\.value)
+        values.enumerated().map { index, point -> (day: Date, z: Double?) in
+            let history = values.prefix(index).suffix(settings.windowDays).map { $0.value }
             guard history.count >= settings.minimumSampleCount,
                   let stats = BaselineEngine.statistics(values: Array(history), epsilon: epsilon) else {
-                return (point.day, nil)
+                return (day: point.day, z: nil)
             }
             let z = BaselineEngine.zScore(observation: point.value, mean: stats.mean, stddev: stats.stddev)
-            return (point.day, z)
+            return (day: point.day, z: z)
         }
     }
 }

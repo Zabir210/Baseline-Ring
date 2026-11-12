@@ -267,10 +267,10 @@ final class HealthKitReader: HealthReading, @unchecked Sendable {
 
         var buckets: [Date: NightBucket] = [:]
         for sample in samples {
-            let wakeDay = wakeDay(for: sample.endDate, calendar: calendar)
-            guard wakeDay >= rangeStart, wakeDay < rangeEnd else { continue }
+            let night = wakeDay(for: sample.endDate, calendar: calendar)
+            guard night >= rangeStart, night < rangeEnd else { continue }
             let span = SleepInterval(start: sample.startDate, end: sample.endDate)
-            var bucket = buckets[wakeDay] ?? NightBucket()
+            var bucket = buckets[night] ?? NightBucket()
             switch sleepClass(sample) {
             case .asleep:
                 bucket.asleep.append(span)
@@ -290,7 +290,7 @@ final class HealthKitReader: HealthReading, @unchecked Sendable {
             }
             bucket.starts.append(sample.startDate)
             bucket.ends.append(sample.endDate)
-            buckets[wakeDay] = bucket
+            buckets[night] = bucket
         }
 
         let aggregates = buckets.map { day, bucket in

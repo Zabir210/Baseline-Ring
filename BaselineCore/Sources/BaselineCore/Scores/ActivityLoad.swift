@@ -106,10 +106,10 @@ public enum ActivityLoadCalculator {
     }
 
     public static func dailyLoads(_ days: [ActivityDay]) -> [(day: Date, load: Double)] {
-        days.map { day in
+        days.map { day -> (day: Date, load: Double) in
             (
-                day.day,
-                load(
+                day: day.day,
+                load: load(
                     steps: day.steps,
                     activeEnergyKilocalories: day.activeEnergyKilocalories,
                     zoneMinutes: day.zoneMinutes
@@ -127,7 +127,7 @@ public enum ActivityLoadCalculator {
     ) -> (load: ActivityLoad, zScore: Double?, sampleCount: Int)? {
         let ordered = days.sorted { $0.day < $1.day }.filter { $0.day < readinessDay }
         guard let latest = ordered.last else { return nil }
-        let historyLoads = dailyLoads(Array(ordered.dropLast())).suffix(settings.windowDays).map(\.load)
+        let historyLoads = dailyLoads(Array(ordered.dropLast())).suffix(settings.windowDays).map { $0.load }
         // Load lives on a 0...100 scale. Use loadEpsilon, not the steps epsilon.
         let stats = BaselineEngine.statistics(values: Array(historyLoads), epsilon: loadEpsilon)
         let z: Double?

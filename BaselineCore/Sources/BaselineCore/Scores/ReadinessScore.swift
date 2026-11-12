@@ -82,11 +82,11 @@ public enum ReadinessScoreCalculator {
             asOf: asOf,
             calendar: calendar
         )
-        let activityPart = activityPart(
+        let activityContribution = activityPart(
             zScore: priorActivityLoadZ,
             sampleCount: priorActivitySampleCount
         )
-        let parts = [hrvPart, rhrPart, sleepPart, activityPart]
+        let parts = [hrvPart, rhrPart, sleepPart, activityContribution]
         let usableCore = [hrvPart, rhrPart, sleepPart].filter(\.contribution.included).count
         let confidence = confidenceLevel(core: [hrvPart, rhrPart, sleepPart], usableCore: usableCore)
         let raw = ScoreMath.neutral + parts.reduce(0) { $0 + $1.contribution.points }

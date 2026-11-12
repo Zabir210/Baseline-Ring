@@ -143,7 +143,7 @@ public enum BaselineRefreshJob {
             return lhs.metric.sortOrder > rhs.metric.sortOrder
         }
 
-        let insights = insights(
+        let computed = insights(
             evaluations: evaluations,
             daily: daily,
             asOf: now,
@@ -159,10 +159,10 @@ public enum BaselineRefreshJob {
             overall: overall,
             metrics: snapshots,
             topAlertSentence: top?.message,
-            readiness: insights.readiness,
-            sleepScore: insights.sleep,
-            activityLoad: insights.activity,
-            patternChange: insights.pattern
+            readiness: computed.readiness,
+            sleepScore: computed.sleep,
+            activityLoad: computed.activity,
+            patternChange: computed.pattern
         )
         return RefreshResult(
             evaluations: evaluations,

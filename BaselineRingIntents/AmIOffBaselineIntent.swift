@@ -4,7 +4,7 @@ import BaselineCore
 struct AmIOffBaselineIntent: AppIntent {
     static let title: LocalizedStringResource = "Am I Off Baseline?"
     static let description = IntentDescription(
-        "Checks on-device personal baselines for HRV, resting heart rate, sleep, and steps."
+        "Checks on-device baselines and reads your readiness score when there is enough data."
     )
     static let openAppWhenRun = false
 

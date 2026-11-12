@@ -35,6 +35,13 @@ public enum AlertCopy {
     }
 
     public static func summary(for snapshot: BaselineSnapshot) -> String {
-        "\(headline(for: snapshot)) \(footer)"
+        var text = headline(for: snapshot)
+        if let spoken = snapshot.readiness?.spokenLine {
+            text += " \(spoken)"
+        }
+        if let pattern = snapshot.patternChange, pattern.isActive {
+            text += " \(pattern.headline)."
+        }
+        return "\(text) \(footer)"
     }
 }

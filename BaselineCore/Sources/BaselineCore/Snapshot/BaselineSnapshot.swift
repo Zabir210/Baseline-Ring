@@ -57,19 +57,62 @@ public struct BaselineSnapshot: Codable, Sendable, Equatable {
     public var overall: BaselineStatus
     public var metrics: [MetricSnapshot]
     public var topAlertSentence: String?
+    public var readiness: ReadinessScore?
+    public var sleepScore: SleepScore?
+    public var activityLoad: ActivityLoad?
+    public var patternChange: PatternChangeSignal?
 
     public init(
         updatedAt: Date,
         isExample: Bool,
         overall: BaselineStatus,
         metrics: [MetricSnapshot],
-        topAlertSentence: String?
+        topAlertSentence: String?,
+        readiness: ReadinessScore? = nil,
+        sleepScore: SleepScore? = nil,
+        activityLoad: ActivityLoad? = nil,
+        patternChange: PatternChangeSignal? = nil
     ) {
         self.updatedAt = updatedAt
         self.isExample = isExample
         self.overall = overall
         self.metrics = metrics
         self.topAlertSentence = topAlertSentence
+        self.readiness = readiness
+        self.sleepScore = sleepScore
+        self.activityLoad = activityLoad
+        self.patternChange = patternChange
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case updatedAt, isExample, overall, metrics, topAlertSentence
+        case readiness, sleepScore, activityLoad, patternChange
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        updatedAt = try container.decode(Date.self, forKey: .updatedAt)
+        isExample = try container.decode(Bool.self, forKey: .isExample)
+        overall = try container.decode(BaselineStatus.self, forKey: .overall)
+        metrics = try container.decode([MetricSnapshot].self, forKey: .metrics)
+        topAlertSentence = try container.decodeIfPresent(String.self, forKey: .topAlertSentence)
+        readiness = try container.decodeIfPresent(ReadinessScore.self, forKey: .readiness)
+        sleepScore = try container.decodeIfPresent(SleepScore.self, forKey: .sleepScore)
+        activityLoad = try container.decodeIfPresent(ActivityLoad.self, forKey: .activityLoad)
+        patternChange = try container.decodeIfPresent(PatternChangeSignal.self, forKey: .patternChange)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(updatedAt, forKey: .updatedAt)
+        try container.encode(isExample, forKey: .isExample)
+        try container.encode(overall, forKey: .overall)
+        try container.encode(metrics, forKey: .metrics)
+        try container.encodeIfPresent(topAlertSentence, forKey: .topAlertSentence)
+        try container.encodeIfPresent(readiness, forKey: .readiness)
+        try container.encodeIfPresent(sleepScore, forKey: .sleepScore)
+        try container.encodeIfPresent(activityLoad, forKey: .activityLoad)
+        try container.encodeIfPresent(patternChange, forKey: .patternChange)
     }
 
     public static let empty = BaselineSnapshot(
@@ -104,5 +147,13 @@ public struct BaselineSnapshot: Codable, Sendable, Equatable {
         case .info, .warn, .high:
             return drivingMetric?.metric.letter ?? "!"
         }
+    }
+
+    /// Readiness number when we are willing to show one; otherwise the status glyph.
+    public var readinessComplicationText: String {
+        if let score = readiness?.score {
+            return "\(score)"
+        }
+        return "–"
     }
 }

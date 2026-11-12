@@ -35,7 +35,10 @@ public enum BaselineRefreshJob {
         calendar: Calendar,
         settings: BaselineParameters,
         previousCUSUM: [MetricKind: CUSUMState] = [:],
-        isExample: Bool = false
+        isExample: Bool = false,
+        sleepNights: [SleepNight] = [],
+        activityDays: [ActivityDay] = [],
+        temperatures: [TemperatureDay] = []
     ) -> RefreshResult {
         let today = calendar.startOfDay(for: now)
         var evaluations: [MetricEvaluation] = []
@@ -140,12 +143,26 @@ public enum BaselineRefreshJob {
             return lhs.metric.sortOrder > rhs.metric.sortOrder
         }
 
+        let insights = insights(
+            evaluations: evaluations,
+            daily: daily,
+            asOf: now,
+            calendar: calendar,
+            settings: settings,
+            sleepNights: sleepNights,
+            activityDays: activityDays,
+            temperatures: temperatures
+        )
         let snapshot = BaselineSnapshot(
             updatedAt: now,
             isExample: isExample,
             overall: overall,
             metrics: snapshots,
-            topAlertSentence: top?.message
+            topAlertSentence: top?.message,
+            readiness: insights.readiness,
+            sleepScore: insights.sleep,
+            activityLoad: insights.activity,
+            patternChange: insights.pattern
         )
         return RefreshResult(
             evaluations: evaluations,
@@ -153,6 +170,62 @@ public enum BaselineRefreshJob {
             alerts: alerts,
             snapshot: snapshot
         )
+    }
+
+    private struct Insights {
+        var readiness: ReadinessScore
+        var sleep: SleepScore
+        var activity: ActivityLoad?
+        var pattern: PatternChangeSignal
+    }
+
+    private static func insights(
+        evaluations: [MetricEvaluation],
+        daily: [DailyAggregate],
+        asOf now: Date,
+        calendar: Calendar,
+        settings: BaselineParameters,
+        sleepNights: [SleepNight],
+        activityDays: [ActivityDay],
+        temperatures: [TemperatureDay]
+    ) -> Insights {
+        func signal(_ metric: MetricKind) -> ReadinessSignal {
+            let evaluation = evaluations.first { $0.metric == metric }
+            return ReadinessSignal(
+                zScore: evaluation?.zScore,
+                sampleCount: evaluation?.sampleCount ?? 0,
+                observedDay: evaluation?.observedDay
+            )
+        }
+        let anchor = [signal(.hrv).observedDay, signal(.rhr).observedDay, signal(.sleep).observedDay]
+            .compactMap { $0 }
+            .max() ?? calendar.startOfDay(for: now)
+        let prior = ActivityLoadCalculator.priorDayLoadZ(days: activityDays, before: anchor, settings: settings)
+        let readiness = ReadinessScoreCalculator.score(
+            hrv: signal(.hrv),
+            restingHR: signal(.rhr),
+            sleep: signal(.sleep),
+            priorActivityLoadZ: prior?.zScore,
+            priorActivitySampleCount: prior?.sampleCount ?? 0,
+            asOf: now,
+            calendar: calendar
+        )
+        let nights = sleepNights.isEmpty ? SleepScoreCalculator.nights(from: daily) : sleepNights
+        let sleep = SleepScoreCalculator.score(nights: nights, settings: settings)
+        let latestActivity = activityDays
+            .filter { $0.day < calendar.startOfDay(for: now) }
+            .max { $0.day < $1.day }
+        let activity = latestActivity.map {
+            ActivityLoadCalculator.load(
+                steps: $0.steps,
+                activeEnergyKilocalories: $0.activeEnergyKilocalories,
+                zoneMinutes: $0.zoneMinutes
+            )
+        }
+        let pattern = PatternChangeDetector.detect(
+            days: PatternChangeDetector.days(daily: daily, temperatures: temperatures, settings: settings)
+        )
+        return Insights(readiness: readiness, sleep: sleep, activity: activity, pattern: pattern)
     }
 
     static func overallStatus(_ statuses: [BaselineStatus]) -> BaselineStatus {

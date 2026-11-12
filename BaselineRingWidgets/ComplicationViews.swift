@@ -31,39 +31,43 @@ struct ComplicationView: View {
     private var content: some View {
         switch family {
         case .accessoryCorner:
-            Text(entry.snapshot.complicationText)
+            Text(entry.snapshot.readinessComplicationText)
                 .font(.headline)
                 .foregroundStyle(tint)
-                .widgetLabel(entry.snapshot.overall.label)
+                .widgetLabel("Readiness")
         case .accessoryInline:
-            Text("Baseline \(entry.snapshot.overall.label)")
+            Text(readinessInline)
         case .accessoryRectangular:
             VStack(alignment: .leading, spacing: 2) {
-                Text(entry.snapshot.overall.label)
+                Text(readinessInline)
                     .font(.headline)
                     .foregroundStyle(tint)
-                Text(AlertCopy.headline(for: entry.snapshot))
+                Text(entry.snapshot.readiness?.explanation ?? AlertCopy.headline(for: entry.snapshot))
                     .font(.caption2)
                     .lineLimit(3)
             }
         default:
             ZStack {
                 AccessoryWidgetBackground()
-                Text(entry.snapshot.complicationText)
+                Text(entry.snapshot.readinessComplicationText)
                     .font(.headline)
                     .foregroundStyle(tint)
             }
-            .widgetLabel(entry.snapshot.overall.label)
+            .widgetLabel("Readiness")
         }
     }
 
-    private var tint: Color {
-        switch entry.snapshot.overall {
-        case .clear: .green
-        case .learning: .gray
-        case .info: .blue
-        case .warn: .orange
-        case .high: .red
+    private var readinessInline: String {
+        if let score = entry.snapshot.readiness?.score {
+            return "Readiness \(score)"
         }
+        return "Readiness –"
+    }
+
+    private var tint: Color {
+        guard let score = entry.snapshot.readiness?.score else { return .gray }
+        if score >= 70 { return .green }
+        if score >= 50 { return .orange }
+        return .red
     }
 }

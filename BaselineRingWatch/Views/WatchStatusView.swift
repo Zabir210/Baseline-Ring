@@ -7,9 +7,18 @@ struct WatchStatusView: View {
     var body: some View {
         List {
             Section {
-                Text(snapshot.overall.label)
-                    .font(.headline)
-                Text(AlertCopy.headline(for: snapshot))
+                if let score = snapshot.readiness?.score {
+                    Text("\(score)")
+                        .font(.title2)
+                    Text("Readiness")
+                        .font(.caption2)
+                } else {
+                    Text("–")
+                        .font(.title2)
+                    Text("Not enough data")
+                        .font(.caption2)
+                }
+                Text(snapshot.readiness?.spokenLine ?? AlertCopy.headline(for: snapshot))
                     .font(.caption2)
             }
             ForEach(snapshot.metrics) { metric in

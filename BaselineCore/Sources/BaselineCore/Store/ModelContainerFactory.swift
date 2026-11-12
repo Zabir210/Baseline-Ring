@@ -14,7 +14,8 @@ public enum ModelContainerFactory {
             DailyMetric.self,
             BaselineState.self,
             AnomalyAlert.self,
-            AppSettings.self
+            AppSettings.self,
+            DayTag.self
         ])
     }
 

@@ -21,6 +21,7 @@ final class AppModel {
     var didRequestHealthAccess = false
     private var didAutoRefresh = false
     private let reader: any HealthReading = HealthKitReader()
+    var enrichment = EnrichedHealthDays(aggregates: [])
 
     func bootstrap(context: ModelContext) async {
         let settings = BaselineStore.ensureSettings(in: context)
@@ -40,14 +41,18 @@ final class AppModel {
 
         do {
             let settings = BaselineStore.ensureSettings(in: context)
-            let daily = try await loadDaily(source: source, settings: settings, context: context)
+            let loaded = try await loadDays(source: source, settings: settings, context: context)
+            enrichment = loaded
             let example = source == .example || (source == .storedSeries && settings.usingExamplePattern)
             let notify = source == .health && settings.notificationsEnabled
             let outcome = try BaselineStore.recompute(
-                daily: daily,
+                daily: loaded.aggregates,
                 settings: settings.parameters(),
                 isExample: example,
                 notify: notify,
+                sleepNights: loaded.sleepNights,
+                activityDays: loaded.activityDays,
+                temperatures: loaded.temperatures,
                 in: context
             )
             snapshot = outcome.snapshot
@@ -84,11 +89,11 @@ final class AppModel {
         await refresh(context: context, source: .storedSeries)
     }
 
-    private func loadDaily(
+    private func loadDays(
         source: RefreshSource,
         settings: AppSettings,
         context: ModelContext
-    ) async throws -> [DailyAggregate] {
+    ) async throws -> EnrichedHealthDays {
         switch source {
         case .health:
             try await reader.requestReadAuthorization()
@@ -97,12 +102,18 @@ final class AppModel {
             try context.save()
             let calendar = Calendar.current
             let start = calendar.date(byAdding: .day, value: -60, to: .now) ?? .now
-            return try await reader.dailyAggregates(from: start, through: .now, calendar: calendar)
+            return try await reader.enrichedDays(from: start, through: .now, calendar: calendar)
         case .example:
-            return StubHealthReader.examplePattern()
+            let aggregates = StubHealthReader.examplePattern()
+            return EnrichedHealthDays(
+                aggregates: aggregates,
+                sleepNights: SleepScoreCalculator.nights(from: aggregates),
+                activityDays: activityDays(from: aggregates),
+                temperatures: []
+            )
         case .storedSeries:
             let rows = try context.fetch(FetchDescriptor<DailyMetric>())
-            return rows.map {
+            let aggregates = rows.map {
                 DailyAggregate(
                     metric: $0.metricKind,
                     day: $0.day,
@@ -110,6 +121,19 @@ final class AppModel {
                     sampleCount: $0.sampleCount
                 )
             }
+            return EnrichedHealthDays(
+                aggregates: aggregates,
+                sleepNights: SleepScoreCalculator.nights(from: aggregates),
+                activityDays: activityDays(from: aggregates),
+                temperatures: []
+            )
+        }
+    }
+
+    private func activityDays(from aggregates: [DailyAggregate]) -> [ActivityDay] {
+        let grouped = Dictionary(grouping: aggregates.filter { $0.metric == .steps }) { $0.day }
+        return grouped.map { day, rows in
+            ActivityDay(day: day, steps: rows.reduce(0) { $0 + $1.value })
         }
     }
 }

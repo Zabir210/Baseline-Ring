@@ -35,6 +35,9 @@ public enum BaselineStore {
         settings: BaselineParameters? = nil,
         isExample: Bool,
         notify: Bool,
+        sleepNights: [SleepNight] = [],
+        activityDays: [ActivityDay] = [],
+        temperatures: [TemperatureDay] = [],
         in context: ModelContext
     ) throws -> ApplyOutcome {
         let settingsRow = ensureSettings(in: context)
@@ -47,7 +50,10 @@ public enum BaselineStore {
             calendar: calendar,
             settings: resolved,
             previousCUSUM: previousCUSUM,
-            isExample: isExample
+            isExample: isExample,
+            sleepNights: sleepNights,
+            activityDays: activityDays,
+            temperatures: temperatures
         )
 
         for row in try context.fetch(FetchDescriptor<DailyMetric>()) {
